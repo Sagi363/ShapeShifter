@@ -1,6 +1,6 @@
 import { MathUtil, Point, Rect } from 'app/scripts/common';
 import * as _ from 'lodash';
-import polylabel from 'polylabel';
+import * as polylabel from 'polylabel';
 
 import { Command, HitOptions, HitResult, Projection, ProjectionOntoPath, SubPath } from '.';
 import { CommandState } from './CommandState';

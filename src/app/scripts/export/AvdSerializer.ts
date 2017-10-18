@@ -15,7 +15,7 @@ const AAPT_NS = 'http://schemas.android.com/aapt';
 export function toVectorDrawableXmlString(vl: VectorLayer) {
   const xmlDoc = document.implementation.createDocument(undefined, 'vector', undefined);
   const rootNode = xmlDoc.documentElement;
-  vectorLayerToXmlNode(vl, rootNode, xmlDoc);
+  vectorLayerToXmlNode(vl, rootNode, xmlDoc, false);
   return serializeXmlNode(rootNode);
 }
 
@@ -34,7 +34,87 @@ export function toAnimatedVectorDrawableXmlString(vl: VectorLayer, animation: An
   rootNode.appendChild(vectorLayerContainerNode);
 
   const vectorLayerNode = xmlDoc.createElement('vector');
-  vectorLayerToXmlNode(vl, vectorLayerNode, xmlDoc);
+  vectorLayerToXmlNode(vl, vectorLayerNode, xmlDoc, false);
+  vectorLayerContainerNode.appendChild(vectorLayerNode);
+
+  // create animation nodes (one per layer)
+  const animBlocksByLayer = new Map<string, AnimationBlock[]>();
+  animation.blocks.forEach(block => {
+    const blocks = animBlocksByLayer.get(block.layerId) || [];
+    blocks.push(block);
+    animBlocksByLayer.set(block.layerId, blocks);
+  });
+
+  animBlocksByLayer.forEach((blocksForLayer, layerId) => {
+    const targetNode = xmlDoc.createElement('target');
+    const layer = vl.findLayerById(layerId);
+    targetNode.setAttributeNS(ANDROID_NS, 'android:name', layer.name);
+    rootNode.appendChild(targetNode);
+
+    const animationNode = xmlDoc.createElementNS(AAPT_NS, 'aapt:attr');
+    animationNode.setAttribute('name', 'android:animation');
+    targetNode.appendChild(animationNode);
+
+    let blockContainerNode = animationNode;
+    let multiBlock = false;
+    if (blocksForLayer.length > 1) {
+      multiBlock = true;
+
+      // <set> for multiple property animations on a single layer.
+      blockContainerNode = xmlDoc.createElement('set');
+      blockContainerNode.setAttributeNS(XMLNS_NS, 'xmlns:android', ANDROID_NS);
+      animationNode.appendChild(blockContainerNode);
+    }
+
+    const animatableProperties = layer.animatableProperties;
+
+    blocksForLayer.forEach(block => {
+      const blockNode = xmlDoc.createElement('objectAnimator');
+      if (!multiBlock) {
+        blockNode.setAttributeNS(XMLNS_NS, 'xmlns:android', ANDROID_NS);
+      }
+      blockNode.setAttributeNS(ANDROID_NS, 'android:propertyName', block.propertyName);
+      conditionalAttr_(blockNode, 'android:startOffset', block.startTime, 0);
+      conditionalAttr_(blockNode, 'android:duration', block.endTime - block.startTime);
+      if (block instanceof PathAnimationBlock) {
+        const fromPath = block.fromValue;
+        const toPath = block.toValue;
+        conditionalAttr_(blockNode, 'android:valueFrom', fromPath ? fromPath.getPathString() : '');
+        conditionalAttr_(blockNode, 'android:valueTo', toPath ? toPath.getPathString() : '');
+      } else {
+        conditionalAttr_(blockNode, 'android:valueFrom', block.fromValue);
+        conditionalAttr_(blockNode, 'android:valueTo', block.toValue);
+      }
+      conditionalAttr_(
+        blockNode,
+        'android:valueType',
+        animatableProperties.get(block.propertyName).getAnimatorValueType(),
+      );
+      const interpolator = _.find(INTERPOLATORS, i => i.value === block.interpolator);
+      conditionalAttr_(blockNode, 'android:interpolator', interpolator.androidRef);
+      blockContainerNode.appendChild(blockNode);
+    });
+  });
+  return serializeXmlNode(rootNode);
+}
+
+/**
+ * Serializes a given VectorLayer and Animation to an animatedvector drawable XML file
+ * with 3 files (Attrs & Colors & Styles).
+ */
+export function toAnimatedVectorDrawableAndStylesXmlString(vl: VectorLayer, animation: Animation) {
+  const xmlDoc = document.implementation.createDocument(undefined, 'animated-vector', undefined);
+  const rootNode = xmlDoc.documentElement;
+  rootNode.setAttributeNS(XMLNS_NS, 'xmlns:android', ANDROID_NS);
+  rootNode.setAttributeNS(XMLNS_NS, 'xmlns:aapt', AAPT_NS);
+
+  // Create drawable node containing the vector layer.
+  const vectorLayerContainerNode = xmlDoc.createElementNS(AAPT_NS, 'aapt:attr');
+  vectorLayerContainerNode.setAttribute('name', 'android:drawable');
+  rootNode.appendChild(vectorLayerContainerNode);
+
+  const vectorLayerNode = xmlDoc.createElement('vector');
+  vectorLayerToXmlNode(vl, vectorLayerNode, xmlDoc, true);
   vectorLayerContainerNode.appendChild(vectorLayerNode);
 
   // create animation nodes (one per layer)
@@ -102,7 +182,7 @@ export function toAnimatedVectorDrawableXmlString(vl: VectorLayer, animation: An
  * Helper method that serializes an VectorLayer to a destinationNode in an xmlDoc.
  * The destinationNode should be a <vector> node.
  */
-function vectorLayerToXmlNode(vl: VectorLayer, destinationNode, xmlDoc) {
+function vectorLayerToXmlNode(vl: VectorLayer, destinationNode, xmlDoc, withColorsAttrs) {
   destinationNode.setAttributeNS(XMLNS_NS, 'xmlns:android', ANDROID_NS);
   destinationNode.setAttributeNS(ANDROID_NS, 'android:width', `${vl.width}dp`);
   destinationNode.setAttributeNS(ANDROID_NS, 'android:height', `${vl.height}dp`);
@@ -120,9 +200,17 @@ function vectorLayerToXmlNode(vl: VectorLayer, destinationNode, xmlDoc) {
         const path = layer.pathData;
         conditionalAttr_(node, 'android:name', layer.name);
         conditionalAttr_(node, 'android:pathData', path ? path.getPathString() : '');
-        conditionalAttr_(node, 'android:fillColor', layer.fillColor, '');
+        // conditionalAttr_(node, 'android:fillColor', layer.fillColor, '');
+        conditionalAttr_(node, 'android:fillColor', withColorsAttrs ? 
+                                                    ((layer.fillColor == null || layer.fillColor == '') ? '' : 
+                                                              '?attr/' + layer.name + '_color') : 
+                                                    layer.fillColor , '');
         conditionalAttr_(node, 'android:fillAlpha', layer.fillAlpha, 1);
-        conditionalAttr_(node, 'android:strokeColor', layer.strokeColor, '');
+        // conditionalAttr_(node, 'android:strokeColor', layer.strokeColor, '');
+        conditionalAttr_(node, 'android:strokeColor', withColorsAttrs ? 
+                                                      ((layer.strokeColor == null || layer.strokeColor == '') ? '' : 
+                                                              '?attr/' + layer.name + '_stroke_color') : 
+                                                      layer.strokeColor , '');
         conditionalAttr_(node, 'android:strokeAlpha', layer.strokeAlpha, 1);
         conditionalAttr_(node, 'android:strokeWidth', layer.strokeWidth, 0);
         conditionalAttr_(node, 'android:trimPathStart', layer.trimPathStart, 0);
@@ -158,6 +246,133 @@ function vectorLayerToXmlNode(vl: VectorLayer, destinationNode, xmlDoc) {
   );
 }
 
+export function colorToStylesXmlString(vl: VectorLayer) {
+  const xmlStylesDoc = document.implementation.createDocument(undefined, 'resources', undefined);
+  let rootNodeStyles = xmlStylesDoc.documentElement;
+
+  rootNodeStyles.innerHTML = '\n\t<!-- Base application theme. -->';
+  let styleNode = xmlStylesDoc.createElement('style');
+  styleNode.setAttribute('name', 'AppTheme');
+  styleNode.setAttribute('parent', 'Theme.AppCompat.Light.DarkActionBar');
+  rootNodeStyles.innerHTML += '\n\t';
+  let itemNode = xmlStylesDoc.createElement('item');
+  itemNode.setAttribute('name', 'colorPrimary');
+  itemNode.innerHTML = '@color/colorPrimary';
+  styleNode.innerHTML += '\n\t\t';
+  styleNode.appendChild(itemNode);
+  //styleNode.innerHTML += '\n\t';
+
+  itemNode = xmlStylesDoc.createElement('item');
+  itemNode.setAttribute('name', 'colorPrimaryDark');
+  itemNode.innerHTML = '@color/colorPrimaryDark';
+  styleNode.appendChild(itemNode);
+  // rootNodeStyles.innerHTML += '\n\t\t';
+  itemNode = xmlStylesDoc.createElement('item');
+  itemNode.setAttribute('name', 'colorAccent');
+  itemNode.innerHTML = '@color/colorAccent';
+  styleNode.appendChild(itemNode);
+
+  
+  // walk(
+  //   vl,
+  //   (layer, parentNode) => {
+  //     if (layer instanceof PathLayer) {
+  //       if (layer.fillColor != null && layer.fillColor != '') {
+  //         let itemNode = xmlStylesDoc.createElement('item');
+  //         itemNode.setAttribute('name', layer.name + '_color');
+  //         itemNode.innerHTML = '@color/' + layer.name + '_color';
+  //         styleNode.innerHTML += '\t';
+  //         styleNode.appendChild(itemNode);
+  //       }
+        
+  //       if (layer.strokeColor != null && layer.strokeColor != '') {
+  //         let strokeItemNode = xmlStylesDoc.createElement('item');
+  //         strokeItemNode.setAttribute('name', layer.name + '_stroke_color');
+  //         strokeItemNode.innerHTML = '@color/' + layer.name + '_stroke_color';
+  //         styleNode.innerHTML += '\t';
+  //         styleNode.appendChild(strokeItemNode);
+  //       }
+
+  //       styleNode.innerHTML += '\n';
+  //     }
+  //   },
+  //   styleNode
+  // );
+
+  rootNodeStyles.appendChild(styleNode);
+  rootNodeStyles.innerHTML += '\n';
+
+  return styleSerializeXmlNode(rootNodeStyles);
+}
+
+export function colorToAttrsXmlString(vl: VectorLayer) {
+  const xmlAttrsDoc = document.implementation.createDocument(undefined, 'resources', undefined);
+  let rootNodeAttrs = xmlAttrsDoc.documentElement;
+  rootNodeAttrs.innerHTML += '\n';
+  
+  walk(
+    vl,
+    (layer, parentNode) => {
+      if (layer instanceof PathLayer) {
+        if (layer.fillColor != null && layer.fillColor != '') {
+          let colorNode = xmlAttrsDoc.createElement('attr');
+          colorNode.setAttribute('name', layer.name + '_color');
+          colorNode.setAttribute('format', 'reference');
+          rootNodeAttrs.innerHTML += '\t';
+          rootNodeAttrs.appendChild(colorNode);
+        }
+        
+        if (layer.strokeColor != null && layer.strokeColor != '') {
+          let strokeColorNode = xmlAttrsDoc.createElement('attr');
+          strokeColorNode.setAttribute('name', layer.name + '_stroke_color');
+          strokeColorNode.setAttribute('format', 'reference');
+          rootNodeAttrs.innerHTML += '\t';
+          rootNodeAttrs.appendChild(strokeColorNode);
+        }
+
+        rootNodeAttrs.innerHTML += '\n';
+      }
+    },
+    rootNodeAttrs
+  );
+
+  return styleSerializeXmlNode(rootNodeAttrs);
+}
+
+export function colorToColorsXmlString(vl: VectorLayer) {
+  const xmlColorsDoc = document.implementation.createDocument(undefined, 'resources', undefined);
+  let rootNodeColors = xmlColorsDoc.documentElement;
+  rootNodeColors.innerHTML += '\n';
+  
+  walk(
+    vl,
+    (layer, parentNode) => {
+      if (layer instanceof PathLayer) {
+          if (layer.fillColor != null && layer.fillColor != '') {
+            let colorNode = xmlColorsDoc.createElement('color');
+            colorNode.setAttribute('name', layer.name + '_color');
+            colorNode.innerHTML = layer.fillColor;
+            rootNodeColors.innerHTML += '\t';
+            rootNodeColors.appendChild(colorNode);
+          }
+          
+          if (layer.strokeColor != null && layer.strokeColor != '') {
+            let strokeColorNode = xmlColorsDoc.createElement('color');
+            strokeColorNode.setAttribute('name', layer.name + '_stroke_color');
+            strokeColorNode.innerHTML = layer.strokeColor;
+            rootNodeColors.innerHTML += '\t';
+            rootNodeColors.appendChild(strokeColorNode);
+          }
+
+          rootNodeColors.innerHTML += '\n';
+      }
+    },
+    rootNodeColors
+  );
+
+  return styleSerializeXmlNode(rootNodeColors);
+}
+
 function conditionalAttr_(node, attr, value, skipValue?) {
   if (!_.isNil(value) && (skipValue === undefined || value !== skipValue)) {
     node.setAttributeNS(ANDROID_NS, attr, value);
@@ -166,6 +381,10 @@ function conditionalAttr_(node, attr, value, skipValue?) {
 
 function serializeXmlNode(xmlNode) {
   return XmlSerializer.serializeToString(xmlNode, { indent: 4, multiAttributeIndent: 4 });
+}
+
+function styleSerializeXmlNode(xmlNode) {
+  return XmlSerializer.serializeToString(xmlNode, { indent: 0, multiAttributeIndent: 0 });
 }
 
 function walk(layer: VectorLayer, fn, context) {

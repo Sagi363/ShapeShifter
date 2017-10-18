@@ -90,6 +90,10 @@
           SVG
         </button>
           <button md-menu-item
+            (click)="this.onExportSvgSpritesheetClick()">
+          SVG spritesheet
+        </button>
+          <button md-menu-item
             (click)="this.onExportVectorDrawableClick()">
           Vector Drawable
         </button>
@@ -97,9 +101,21 @@
             (click)="this.onExportAnimatedVectorDrawableClick()">
           Animated Vector Drawable
         </button>
-          <button md-menu-item
-            (click)="this.onExportSvgSpritesheetClick()">
-          SVG spritesheet
+        <button md-menu-item
+            (click)="this.onExportAnimatedVectorDrawableAndStylesClick()">
+          AVD with (Attrs & Colors & Styles)
+        </button>
+        <button md-menu-item
+            (click)="this.onExportAttrsOnlyClick()">
+          Attrs xml
+        </button>
+        <button md-menu-item
+            (click)="this.onExportColorsOnlyClick()">
+          Colors xml
+        </button>
+        <button md-menu-item
+            (click)="this.onExportStylesOnlyClick()">
+          Styles xml
         </button>
           <!--<button md-menu-item
           [disabled]="true"

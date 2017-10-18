@@ -277,6 +277,34 @@ export class LayerTimelineComponent extends DestroyableMixin()
     this.fileExportService.exportAnimatedVectorDrawable();
   }
 
+
+
+    // Called from the LayerTimelineComponent template.
+  onExportAnimatedVectorDrawableAndStylesClick() {
+    ga('send', 'event', 'Export', 'AVD with (Attrs & Colors & Styles)');
+    this.fileExportService.exportAnimatedVectorDrawableAndStylesClick();
+  }
+
+    // Called from the LayerTimelineComponent template.
+  onExportAttrsOnlyClick() {
+    ga('send', 'event', 'Export', 'Attrs xml');
+    this.fileExportService.exportAttrsOnlyClick();
+  }
+
+    // Called from the LayerTimelineComponent template.
+  onExportColorsOnlyClick() {
+    ga('send', 'event', 'Export', 'Colors xml');
+    this.fileExportService.exportColorsOnlyClick();
+  }
+
+    // Called from the LayerTimelineComponent template.
+  onExportStylesOnlyClick() {
+    ga('send', 'event', 'Export', 'Styles xml');
+    this.fileExportService.exportStylesOnlyClick();
+  }
+
+
+
   // Called from the LayerTimelineComponent template.
   onExportSvgSpritesheetClick() {
     ga('send', 'event', 'Export', 'SVG Spritesheet');

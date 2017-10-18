@@ -91,6 +91,52 @@ export class FileExportService {
     const fileName = `avd_${anim.name}.xml`;
     downloadFile(avd, fileName);
   }
+  
+
+  /////////////////// Sagi ///////////////////////
+
+  exportAnimatedVectorDrawableAndStylesClick() {
+    const vl = this.getVectorLayerWithoutHiddenLayers();
+    const anim = this.getAnimationWithoutHiddenBlocks();
+    const avd_and_styles = AvdSerializer.toAnimatedVectorDrawableAndStylesXmlString(vl, anim);
+    const colors = AvdSerializer.colorToColorsXmlString(vl);
+    const attrs = AvdSerializer.colorToAttrsXmlString(vl);
+    const styles = AvdSerializer.colorToStylesXmlString(vl);
+    const zip = new JSZip();
+    const spriteFolder = zip.folder(`avd_${vl.name}`);
+    spriteFolder.file(`${vl.name}_avd.xml`, avd_and_styles);
+    spriteFolder.file(`colors.xml`, colors);
+    spriteFolder.file(`attrs.xml`, attrs);
+    spriteFolder.file(`styles.xml`, styles);
+    zip.generateAsync({ type: 'blob' }).then(content => {
+      downloadFile(content, `avd_${vl.name}_and_styles.zip`);
+    });
+  }
+
+  exportAttrsOnlyClick() {
+    const vl = this.getVectorLayerWithoutHiddenLayers();
+    const attrs = AvdSerializer.colorToAttrsXmlString(vl);
+    const fileName = `${vl.name}_attrs.xml`;
+    downloadFile(attrs, fileName);
+  }
+
+  exportColorsOnlyClick() {
+    const vl = this.getVectorLayerWithoutHiddenLayers();
+    const colors = AvdSerializer.colorToColorsXmlString(vl);
+    const fileName = `${vl.name}_colors.xml`;
+    downloadFile(colors, fileName);
+  }
+
+  exportStylesOnlyClick() {
+    const vl = this.getVectorLayerWithoutHiddenLayers();
+    const styles = AvdSerializer.colorToStylesXmlString(vl);
+    const fileName = `${vl.name}_styles.xml`;
+    downloadFile(styles, fileName);
+  }
+
+   /////////////////// Sagi ///////////////////////
+
+
 
   exportSvgSpritesheet() {
     // Create an svg sprite animation.

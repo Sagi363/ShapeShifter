@@ -251,54 +251,57 @@ export function colorToStylesXmlString(vl: VectorLayer) {
   let rootNodeStyles = xmlStylesDoc.documentElement;
 
   rootNodeStyles.innerHTML = '\n\t<!-- Base application theme. -->';
+  rootNodeStyles.appendChild(document.createTextNode('\n\t'));
   let styleNode = xmlStylesDoc.createElement('style');
   styleNode.setAttribute('name', 'AppTheme');
   styleNode.setAttribute('parent', 'Theme.AppCompat.Light.DarkActionBar');
-  rootNodeStyles.innerHTML += '\n\t';
+  styleNode.appendChild(document.createTextNode('\n'));
   let itemNode = xmlStylesDoc.createElement('item');
   itemNode.setAttribute('name', 'colorPrimary');
   itemNode.innerHTML = '@color/colorPrimary';
-  styleNode.innerHTML += '\n\t\t';
+  // styleNode.innerHTML += '\n\t\t';
+  styleNode.appendChild(document.createTextNode('\t\t'));
   styleNode.appendChild(itemNode);
-  //styleNode.innerHTML += '\n\t';
+  styleNode.appendChild(document.createTextNode('\n'));
 
   itemNode = xmlStylesDoc.createElement('item');
   itemNode.setAttribute('name', 'colorPrimaryDark');
   itemNode.innerHTML = '@color/colorPrimaryDark';
+  styleNode.appendChild(document.createTextNode('\t\t'));
   styleNode.appendChild(itemNode);
-  // rootNodeStyles.innerHTML += '\n\t\t';
+  styleNode.appendChild(document.createTextNode('\n'));
+  
   itemNode = xmlStylesDoc.createElement('item');
   itemNode.setAttribute('name', 'colorAccent');
   itemNode.innerHTML = '@color/colorAccent';
+  styleNode.appendChild(document.createTextNode('\t\t'));
   styleNode.appendChild(itemNode);
-
   
-  // walk(
-  //   vl,
-  //   (layer, parentNode) => {
-  //     if (layer instanceof PathLayer) {
-  //       if (layer.fillColor != null && layer.fillColor != '') {
-  //         let itemNode = xmlStylesDoc.createElement('item');
-  //         itemNode.setAttribute('name', layer.name + '_color');
-  //         itemNode.innerHTML = '@color/' + layer.name + '_color';
-  //         styleNode.innerHTML += '\t';
-  //         styleNode.appendChild(itemNode);
-  //       }
+  walk(
+    vl,
+    (layer, parentNode) => {
+      if (layer instanceof PathLayer) {
+        if (layer.fillColor != null && layer.fillColor != '') {
+          let itemNode = xmlStylesDoc.createElement('item');
+          itemNode.setAttribute('name', layer.name + '_color');
+          itemNode.innerHTML = '@color/' + layer.name + '_color';
+          styleNode.appendChild(document.createTextNode('\n\t\t'));
+          styleNode.appendChild(itemNode);
+        }
         
-  //       if (layer.strokeColor != null && layer.strokeColor != '') {
-  //         let strokeItemNode = xmlStylesDoc.createElement('item');
-  //         strokeItemNode.setAttribute('name', layer.name + '_stroke_color');
-  //         strokeItemNode.innerHTML = '@color/' + layer.name + '_stroke_color';
-  //         styleNode.innerHTML += '\t';
-  //         styleNode.appendChild(strokeItemNode);
-  //       }
+        if (layer.strokeColor != null && layer.strokeColor != '') {
+          let strokeItemNode = xmlStylesDoc.createElement('item');
+          strokeItemNode.setAttribute('name', layer.name + '_stroke_color');
+          strokeItemNode.innerHTML = '@color/' + layer.name + '_stroke_color';
+          styleNode.appendChild(document.createTextNode('\n\t\t'));
+          styleNode.appendChild(strokeItemNode);
+        }
+      }
+    },
+    styleNode
+  );
 
-  //       styleNode.innerHTML += '\n';
-  //     }
-  //   },
-  //   styleNode
-  // );
-
+  styleNode.appendChild(document.createTextNode('\n\t'));
   rootNodeStyles.appendChild(styleNode);
   rootNodeStyles.innerHTML += '\n';
 
@@ -326,7 +329,7 @@ export function colorToAttrsXmlString(vl: VectorLayer) {
           let strokeColorNode = xmlAttrsDoc.createElement('attr');
           strokeColorNode.setAttribute('name', layer.name + '_stroke_color');
           strokeColorNode.setAttribute('format', 'reference');
-          rootNodeAttrs.innerHTML += '\t';
+          rootNodeAttrs.innerHTML += '\n\t';
           rootNodeAttrs.appendChild(strokeColorNode);
         }
 
@@ -360,7 +363,7 @@ export function colorToColorsXmlString(vl: VectorLayer) {
             let strokeColorNode = xmlColorsDoc.createElement('color');
             strokeColorNode.setAttribute('name', layer.name + '_stroke_color');
             strokeColorNode.innerHTML = layer.strokeColor;
-            rootNodeColors.innerHTML += '\t';
+            rootNodeColors.innerHTML += '\n\t';
             rootNodeColors.appendChild(strokeColorNode);
           }
 

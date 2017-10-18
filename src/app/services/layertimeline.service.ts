@@ -100,8 +100,8 @@ export class LayerTimelineService {
 
   private updateSelections(
     isAnimSelected: boolean,
-    selectedBlockIds: Set<string>,
-    selectedLayerIds: Set<string>,
+    selectedBlockIds: ReadonlySet<string>,
+    selectedLayerIds: ReadonlySet<string>,
   ) {
     const actions: Action[] = [];
     if (this.isAnimationSelected() !== isAnimSelected) {
@@ -285,9 +285,13 @@ export class LayerTimelineService {
         return l;
       }
       const clonedLayer = l.clone();
-      clonedLayer.pathData = path.mutate().transform(layerTransform).build();
+      clonedLayer.pathData = path
+        .mutate()
+        .transform(layerTransform)
+        .build();
       return clonedLayer;
     });
+    const layerChildrenIds = new Set(layerChildren.map(l => l.id));
     const parent = LayerUtil.findParent(vl, layerId).clone();
     const children = [...parent.children];
     children.splice(_.findIndex(parent.children, l => l.id === layerId), 1, ...layerChildren);
@@ -301,12 +305,18 @@ export class LayerTimelineService {
     newAnimation.blocks = newAnimation.blocks.filter(b => b.layerId !== layerId);
     // TODO: also attempt to merge children group animation blocks?
     newAnimation.blocks = newAnimation.blocks.map(b => {
-      if (!(b instanceof PathAnimationBlock)) {
+      if (!(b instanceof PathAnimationBlock) || !layerChildrenIds.has(b.layerId)) {
         return b;
       }
       const block = b.clone();
-      block.fromValue = block.fromValue.mutate().transform(layerTransform).build();
-      block.toValue = block.toValue.mutate().transform(layerTransform).build();
+      block.fromValue = block.fromValue
+        .mutate()
+        .transform(layerTransform)
+        .build();
+      block.toValue = block.toValue
+        .mutate()
+        .transform(layerTransform)
+        .build();
       return block;
     });
     actions.push(new SetAnimation(newAnimation));
@@ -317,7 +327,8 @@ export class LayerTimelineService {
     const collapsedLayerIds = this.getCollapsedLayerIds();
     const hiddenLayerIds = this.getHiddenLayerIds();
     const selectedLayerIds = this.getSelectedLayerIds();
-    const differenceFn = (s: Set<string>, a: string[]) => new Set(_.difference(Array.from(s), a));
+    const differenceFn = (s: ReadonlySet<string>, a: string[]) =>
+      new Set(_.difference(Array.from(s), a));
     const actions: Action[] = [];
     if (deletedLayerIds.some(id => collapsedLayerIds.has(id))) {
       actions.push(new SetCollapsedLayers(differenceFn(collapsedLayerIds, deletedLayerIds)));
@@ -643,7 +654,10 @@ export class LayerTimelineService {
 
   private queryStore<T>(selector: OutputSelector<Object, T, (res: Object) => T>) {
     let obj: T;
-    this.store.select(selector).first().subscribe(o => (obj = o));
+    this.store
+      .select(selector)
+      .first()
+      .subscribe(o => (obj = o));
     return obj;
   }
 }

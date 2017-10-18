@@ -6,7 +6,7 @@ import { AfterViewInit, Directive, ElementRef, Input } from '@angular/core';
 import { ActionSource } from 'app/model/actionmode';
 import { ClipPathLayer, Layer, LayerUtil, PathLayer, VectorLayer } from 'app/model/layers';
 import { PathUtil } from 'app/model/paths';
-import { ColorUtil } from 'app/scripts/common';
+import { ColorUtil, Matrix } from 'app/scripts/common';
 import { DestroyableMixin } from 'app/scripts/mixins';
 import { AnimatorService } from 'app/services';
 import { State, Store } from 'app/store';
@@ -31,7 +31,7 @@ export class CanvasLayersDirective extends CanvasLayoutMixin(DestroyableMixin())
   private readonly $renderingCanvas: JQuery<HTMLCanvasElement>;
   private readonly $offscreenCanvas: JQuery<HTMLCanvasElement>;
   private vectorLayer: VectorLayer;
-  private hiddenLayerIds = new Set<string>();
+  private hiddenLayerIds: ReadonlySet<string> = new Set<string>();
 
   constructor(
     elementRef: ElementRef,
@@ -164,8 +164,9 @@ export class CanvasLayersDirective extends CanvasLayoutMixin(DestroyableMixin())
     }
     ctx.save();
 
-    const canvasTransform = LayerUtil.getCanvasTransformForLayer(vl, layer.id);
-    const flattenedTransform = canvasTransform.invert();
+    const canvasTransforms = LayerUtil.getCanvasTransformsForLayer(vl, layer.id);
+    const canvasTransform = Matrix.flatten(canvasTransforms);
+    const flattenedTransform = Matrix.flatten(canvasTransforms.slice().reverse());
     CanvasUtil.executeCommands(ctx, layer.pathData.getCommands(), canvasTransform);
 
     const strokeWidthMultiplier = flattenedTransform.getScaleFactor();

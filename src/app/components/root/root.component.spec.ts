@@ -5,19 +5,20 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 import {
-  MdButtonModule,
-  MdDialogModule,
-  MdIconModule,
-  MdIconRegistry,
-  MdInputModule,
-  MdMenuModule,
-  MdOptionModule,
-  MdRadioModule,
-  MdSlideToggleModule,
-  MdSnackBarModule,
-  MdToolbarModule,
-  MdTooltipModule,
+  MatButtonModule,
+  MatDialogModule,
+  MatIconModule,
+  MatIconRegistry,
+  MatInputModule,
+  MatMenuModule,
+  MatOptionModule,
+  MatRadioModule,
+  MatSlideToggleModule,
+  MatSnackBarModule,
+  MatToolbarModule,
+  MatTooltipModule,
 } from '@angular/material';
+import { MATERIAL_COMPATIBILITY_MODE } from '@angular/material/core';
 import { BrowserModule, DomSanitizer } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import {
@@ -99,17 +100,17 @@ describe('RootComponent', () => {
           HttpModule,
           NoopAnimationsModule,
           // Angular material components.
-          MdButtonModule,
-          MdDialogModule,
-          MdIconModule,
-          MdInputModule,
-          MdMenuModule,
-          MdOptionModule,
-          MdRadioModule,
-          MdSlideToggleModule,
-          MdSnackBarModule,
-          MdToolbarModule,
-          MdTooltipModule,
+          MatButtonModule,
+          MatDialogModule,
+          MatIconModule,
+          MatInputModule,
+          MatMenuModule,
+          MatOptionModule,
+          MatRadioModule,
+          MatSlideToggleModule,
+          MatSnackBarModule,
+          MatToolbarModule,
+          MatTooltipModule,
         ],
         providers: [
           { provide: Store, useValue: new MockStore() },
@@ -125,6 +126,7 @@ describe('RootComponent', () => {
           ShortcutService,
           SnackBarService,
           ThemeService,
+          { provide: MATERIAL_COMPATIBILITY_MODE, useValue: true },
         ],
       }).compileComponents();
       loadSvgIcons([
@@ -152,9 +154,9 @@ describe('RootComponent', () => {
 });
 
 function loadSvgIcons(svgIcons: Array<{ name: string; path: string }>) {
-  const mdIconRegistry = TestBed.get(MdIconRegistry);
+  const matIconRegistry = TestBed.get(MatIconRegistry);
   const sanitizer = TestBed.get(DomSanitizer);
   for (const { name, path } of svgIcons) {
-    mdIconRegistry.addSvgIcon(name, sanitizer.bypassSecurityTrustResourceUrl(path));
+    matIconRegistry.addSvgIcon(name, sanitizer.bypassSecurityTrustResourceUrl(path));
   }
 }

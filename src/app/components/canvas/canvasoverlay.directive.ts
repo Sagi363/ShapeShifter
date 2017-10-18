@@ -20,8 +20,7 @@ import {
   PathLayer,
   VectorLayer,
 } from 'app/model/layers';
-import { Command } from 'app/model/paths';
-import { HitResult, Path, SubPath } from 'app/model/paths';
+import { Command, HitResult, Path, SubPath } from 'app/model/paths';
 import { MathUtil, Matrix, Point } from 'app/scripts/common';
 import { DestroyableMixin } from 'app/scripts/mixins';
 import {
@@ -95,8 +94,8 @@ export class CanvasOverlayDirective extends CanvasLayoutMixin(DestroyableMixin()
   private readonly $canvas: JQuery<HTMLCanvasElement>;
   vectorLayer: VectorLayer;
   // Normal mode variables.
-  private hiddenLayerIds = new Set<string>();
-  private selectedLayerIds = new Set<string>();
+  private hiddenLayerIds: ReadonlySet<string> = new Set<string>();
+  private selectedLayerIds: ReadonlySet<string> = new Set<string>();
   // Shape Shifter mode variables.
   private blockLayerId: string;
   actionMode: ActionMode;
@@ -106,7 +105,7 @@ export class CanvasOverlayDirective extends CanvasLayoutMixin(DestroyableMixin()
   pairedSubPaths: Set<number>;
   unpairedSubPath: { source: ActionSource; subIdx: number };
   private isActionMode: boolean;
-  private selectedBlockLayerIds = new Set<string>();
+  private selectedBlockLayerIds: ReadonlySet<string> = new Set<string>();
   private subIdxWithError: number;
 
   private selectionHelper: SelectionHelper | undefined;
@@ -204,11 +203,8 @@ export class CanvasOverlayDirective extends CanvasLayoutMixin(DestroyableMixin()
           } else {
             this.segmentSplitter = undefined;
           }
-          if (this.actionMode === ActionMode.Selection) {
-            this.selectionHelper = new SelectionHelper(this);
-          } else {
-            this.selectionHelper = undefined;
-          }
+          this.selectionHelper =
+            this.actionMode === ActionMode.Selection ? new SelectionHelper(this) : undefined;
           if (this.actionMode === ActionMode.PairSubPaths) {
             this.pairSubPathHelper = new PairSubPathHelper(this);
             const selections = this.actionSelections.filter(s => s.type === SelectionType.SubPath);
@@ -220,17 +216,16 @@ export class CanvasOverlayDirective extends CanvasLayoutMixin(DestroyableMixin()
           } else {
             this.pairSubPathHelper = undefined;
           }
-          if (this.actionMode === ActionMode.SplitSubPaths && layer && layer.isFilled()) {
-            this.shapeSplitter = new ShapeSplitter(this);
-          } else {
-            this.shapeSplitter = undefined;
-          }
+          this.shapeSplitter =
+            this.actionMode === ActionMode.SplitSubPaths && layer && layer.isFilled()
+              ? new ShapeSplitter(this)
+              : undefined;
           this.currentHoverPreviewPath = undefined;
           this.draw();
         }),
       );
       const updateCurrentHoverFn = (hover: Hover | undefined) => {
-        let previewPath: Path = undefined;
+        let previewPath: Path;
         if (this.vectorLayer && this.activePath && hover) {
           // If the user is hovering over the inspector split button, then build
           // a snapshot of what the path would look like after the action
@@ -630,7 +625,7 @@ export class CanvasOverlayDirective extends CanvasLayoutMixin(DestroyableMixin()
         continue;
       }
       let radius = this.smallPointRadius;
-      let text: string = undefined;
+      let text: string;
       const isHovering = isPointInfoHoveringFn({ cmd, subIdx, cmdIdx });
       const isAtLeastMedium = isPointInfoAtLeastMediumFn({ cmd, subIdx, cmdIdx });
       if ((isAtLeastMedium || isHovering) && this.actionMode === ActionMode.Selection) {
@@ -936,10 +931,10 @@ export class CanvasOverlayDirective extends CanvasLayoutMixin(DestroyableMixin()
       }
       // TODO: use a user-defined type check to confirm this layer is an instance of MorphableLayer
       if ((layer instanceof PathLayer || layer instanceof ClipPathLayer) && layer.pathData) {
-        const transformedPoint = MathUtil.transformPoint(
-          point,
-          LayerUtil.getCanvasTransformForLayer(root, layer.id).invert(),
+        const flattenedTransform = Matrix.flatten(
+          LayerUtil.getCanvasTransformsForLayer(root, layer.id).reverse(),
         );
+        const transformedPoint = MathUtil.transformPoint(point, flattenedTransform);
         let isSegmentInRangeFn: (distance: number, cmd: Command) => boolean;
         isSegmentInRangeFn = distance => {
           let maxDistance = 0;
@@ -963,11 +958,12 @@ export class CanvasOverlayDirective extends CanvasLayoutMixin(DestroyableMixin()
 
   // NOTE: this should only be used in action mode
   performHitTest(mousePoint: Point, opts: HitTestOpts = {}) {
-    const flattenedTransform = LayerUtil.getCanvasTransformForLayer(
+    const canvasTransforms = LayerUtil.getCanvasTransformsForLayer(
       this.vectorLayer,
       this.blockLayerId,
-    );
-    const transformedMousePoint = MathUtil.transformPoint(mousePoint, flattenedTransform.invert());
+    ).reverse();
+    const flattenedTransform = Matrix.flatten(canvasTransforms);
+    const transformedMousePoint = MathUtil.transformPoint(mousePoint, flattenedTransform);
     let isPointInRangeFn: (distance: number, cmd: Command) => boolean;
     if (!opts.noPoints) {
       isPointInRangeFn = (distance, cmd) => {

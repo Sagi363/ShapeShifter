@@ -3,13 +3,14 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 import {
-  MdButtonModule,
-  MdIconModule,
-  MdIconRegistry,
-  MdMenuModule,
-  MdSlideToggleModule,
-  MdTooltipModule,
+  MatButtonModule,
+  MatIconModule,
+  MatIconRegistry,
+  MatMenuModule,
+  MatSlideToggleModule,
+  MatTooltipModule,
 } from '@angular/material';
+import { MATERIAL_COMPATIBILITY_MODE } from '@angular/material/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActionModeService, LayerTimelineService, ThemeService } from 'app/services';
@@ -30,11 +31,11 @@ describe('ToolbarComponent', () => {
           HttpModule,
           FlexLayoutModule,
           FormsModule,
-          MdButtonModule,
-          MdIconModule,
-          MdMenuModule,
-          MdTooltipModule,
-          MdSlideToggleModule,
+          MatButtonModule,
+          MatIconModule,
+          MatMenuModule,
+          MatTooltipModule,
+          MatSlideToggleModule,
           NoopAnimationsModule,
         ],
         providers: [
@@ -42,6 +43,7 @@ describe('ToolbarComponent', () => {
           ActionModeService,
           LayerTimelineService,
           ThemeService,
+          { provide: MATERIAL_COMPATIBILITY_MODE, useValue: true },
         ],
       }).compileComponents();
       loadSvgIcons([
@@ -68,9 +70,9 @@ describe('ToolbarComponent', () => {
 });
 
 function loadSvgIcons(svgIcons: Array<{ name: string; path: string }>) {
-  const mdIconRegistry = TestBed.get(MdIconRegistry);
+  const matIconRegistry = TestBed.get(MatIconRegistry);
   const sanitizer = TestBed.get(DomSanitizer);
   for (const { name, path } of svgIcons) {
-    mdIconRegistry.addSvgIcon(name, sanitizer.bypassSecurityTrustResourceUrl(path));
+    matIconRegistry.addSvgIcon(name, sanitizer.bypassSecurityTrustResourceUrl(path));
   }
 }

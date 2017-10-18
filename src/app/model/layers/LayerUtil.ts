@@ -22,7 +22,7 @@ export function getCanvasTransformForLayer(root: Layer, layerId: string) {
  * are returned in top-down order (i.e. the transform for the layer's
  * immediate parent will be the very last matrix in the returned list).
  */
-function getCanvasTransformsForLayer(root: Layer, layerId: string) {
+export function getCanvasTransformsForLayer(root: Layer, layerId: string) {
   return (function recurseFn(parents: Layer[], current: Layer): Matrix[] {
     if (current.id === layerId) {
       return _.flatMap(parents, l => {
@@ -68,9 +68,7 @@ export function adjustViewports(vl1: VectorLayer, vl2: VectorLayer) {
 
   let { width: w1, height: h1 } = vl1;
   let { width: w2, height: h2 } = vl2;
-  const isMaxDimenFn = (n: number) => {
-    return Math.max(w1, h1, w2, h2, n) === n;
-  };
+  const isMaxDimenFn = (n: number) => Math.max(w1, h1, w2, h2, n) === n;
 
   let scale1 = 1;
   let scale2 = 1;

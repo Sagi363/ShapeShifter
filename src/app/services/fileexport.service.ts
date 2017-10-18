@@ -165,19 +165,28 @@ export class FileExportService {
 
   private getVectorLayer() {
     let vectorLayer: VectorLayer;
-    this.store.select(getVectorLayer).first().subscribe(vl => (vectorLayer = vl));
+    this.store
+      .select(getVectorLayer)
+      .first()
+      .subscribe(vl => (vectorLayer = vl));
     return vectorLayer;
   }
 
   private getAnimation() {
     let animation: Animation;
-    this.store.select(getAnimation).first().subscribe(anim => (animation = anim));
+    this.store
+      .select(getAnimation)
+      .first()
+      .subscribe(anim => (animation = anim));
     return animation;
   }
 
   private getHiddenLayerIds() {
-    let hiddenLayerIds: Set<string>;
-    this.store.select(getHiddenLayerIds).first().subscribe(ids => (hiddenLayerIds = ids));
+    let hiddenLayerIds: ReadonlySet<string>;
+    this.store
+      .select(getHiddenLayerIds)
+      .first()
+      .subscribe(ids => (hiddenLayerIds = ids));
     return hiddenLayerIds;
   }
 
@@ -194,13 +203,10 @@ export class FileExportService {
 }
 
 function downloadFile(content: string | Blob, fileName: string) {
-  const anchor = $('<a>').hide().appendTo(document.body);
-  let blob: Blob;
-  if (content instanceof Blob) {
-    blob = content;
-  } else {
-    blob = new Blob([content], { type: 'octet/stream' });
-  }
+  const anchor = $('<a>')
+    .hide()
+    .appendTo(document.body);
+  const blob = content instanceof Blob ? content : new Blob([content], { type: 'octet/stream' });
   const url = window.URL.createObjectURL(blob);
   anchor.attr({ href: url, download: fileName });
   anchor.get(0).click();

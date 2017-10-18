@@ -2,6 +2,7 @@ import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/combineLatest';
 import 'rxjs/add/operator/map';
 
+import { OverlayContainer } from '@angular/cdk/overlay';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -12,7 +13,6 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import { OverlayContainer } from '@angular/material';
 import { DropFilesAction } from 'app/components/dialogs';
 import { ActionMode, ActionSource } from 'app/model/actionmode';
 import { DestroyableMixin } from 'app/scripts/mixins';
@@ -96,13 +96,21 @@ export class RootComponent extends DestroyableMixin() implements OnInit, AfterVi
       this.themeService.asObservable().subscribe(t => {
         const isDark = t.themeType === 'dark';
         this.isDarkThemeHostBinding = isDark;
-        this.overlayContainer.themeClass = isDark ? 'ss-dark-theme' : undefined;
+        const { classList } = this.overlayContainer.getContainerElement();
+        if (isDark) {
+          classList.add('ss-dark-theme');
+        } else {
+          classList.remove('ss-dark-theme');
+        }
       }),
     );
 
     $(window).on('beforeunload', event => {
       let isDirty: boolean;
-      this.store.select(isWorkspaceDirty).first().subscribe(dirty => (isDirty = dirty));
+      this.store
+        .select(isWorkspaceDirty)
+        .first()
+        .subscribe(dirty => (isDirty = dirty));
       if (isDirty && !IS_DEV_BUILD) {
         return `You've made changes but haven't saved. Are you sure you want to navigate away?`;
       }

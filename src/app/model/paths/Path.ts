@@ -2,7 +2,7 @@ import { MathUtil, Matrix, Point } from 'app/scripts/common';
 import { environment } from 'environments/environment';
 import * as _ from 'lodash';
 
-import { Line, Projection } from './calculators';
+import { Projection } from './calculators';
 import { Command } from './Command';
 import { CommandState } from './CommandState';
 import * as PathParser from './PathParser';
@@ -19,11 +19,7 @@ export class Path {
   private pathString: string;
 
   constructor(obj: string | Command[] | PathState) {
-    if (typeof obj === 'string' || Array.isArray(obj)) {
-      this.ps = new PathState(obj);
-    } else {
-      this.ps = obj;
-    }
+    this.ps = typeof obj === 'string' || Array.isArray(obj) ? new PathState(obj) : obj;
     if (!environment.production) {
       // Don't initialize variables lazily for dev builds (to avoid
       // ngrx-store-freeze crashes).
@@ -1238,9 +1234,9 @@ function shiftCommandStates(css: CommandState[], isReversed: boolean, shiftOffse
   const newCss: CommandState[] = [];
 
   let counter = 0;
-  let targetCsIdx: number = undefined;
-  let targetSplitIdx: number = undefined;
-  let targetCs: CommandState = undefined;
+  let targetCsIdx: number;
+  let targetSplitIdx: number;
+  let targetCs: CommandState;
   for (let i = 0; i < css.length; i++) {
     const cs = css[i];
     const size = cs.getCommands().length;

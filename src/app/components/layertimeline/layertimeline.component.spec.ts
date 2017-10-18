@@ -2,14 +2,15 @@ import { ComponentFixture, TestBed, async, inject } from '@angular/core/testing'
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { HttpModule } from '@angular/http';
 import {
-  MdButtonModule,
-  MdDialogModule,
-  MdIconModule,
-  MdIconRegistry,
-  MdMenuModule,
-  MdSnackBarModule,
-  MdTooltipModule,
+  MatButtonModule,
+  MatDialogModule,
+  MatIconModule,
+  MatIconRegistry,
+  MatMenuModule,
+  MatSnackBarModule,
+  MatTooltipModule,
 } from '@angular/material';
+import { MATERIAL_COMPATIBILITY_MODE } from '@angular/material/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ScrollGroupDirective } from 'app/components/scrollgroup/scrollgroup.directive';
 import { SplitterComponent } from 'app/components/splitter/splitter.component';
@@ -52,12 +53,12 @@ describe('LayerTimelineComponent', () => {
         imports: [
           HttpModule,
           FlexLayoutModule,
-          MdButtonModule,
-          MdIconModule,
-          MdMenuModule,
-          MdTooltipModule,
-          MdSnackBarModule,
-          MdDialogModule,
+          MatButtonModule,
+          MatIconModule,
+          MatMenuModule,
+          MatTooltipModule,
+          MatSnackBarModule,
+          MatDialogModule,
         ],
         providers: [
           { provide: Store, useValue: new MockStore() },
@@ -72,6 +73,7 @@ describe('LayerTimelineComponent', () => {
           ShortcutService,
           SnackBarService,
           ThemeService,
+          { provide: MATERIAL_COMPATIBILITY_MODE, useValue: true },
         ],
       }).compileComponents();
       loadSvgIcons([
@@ -97,7 +99,7 @@ describe('LayerTimelineComponent', () => {
 });
 
 function loadSvgIcons(svgIcons: Array<{ name: string; path: string }>) {
-  const mdIconRegistry = TestBed.get(MdIconRegistry);
+  const mdIconRegistry = TestBed.get(MatIconRegistry);
   const sanitizer = TestBed.get(DomSanitizer);
   for (const { name, path } of svgIcons) {
     mdIconRegistry.addSvgIcon(name, sanitizer.bypassSecurityTrustResourceUrl(path));
